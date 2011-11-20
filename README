@@ -1,0 +1,25 @@
+An example:
+
+  class User < ActiveRecord::Base
+    include TextAttribute
+
+    text_attribute :novel
+  end
+
+  user = User.new
+  user.novel = "Some huge string of text..."
+  user.novel_changed?
+  => true
+  user.save!
+  user.novel
+  => "Some huge string of text..."
+  user.novel_path
+  => "your_project/text_cache/development/12a/45b/22a/User_1/novel"
+
+When testing, TextAttribute will use a temporary memory store.  You should clear this between tests:
+
+  RSpec.configure do |c|
+    config.before(:each) do
+      $text_memory_store = {}
+    end
+  end
