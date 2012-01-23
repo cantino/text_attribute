@@ -46,11 +46,11 @@ module TextAttribute
 
     def remove_text_file(attribute_name)
       path = File.join(text_cache_path, attribute_name.to_s)
-      File.exists?(path) && rm(path)#, options[:verbose] => false)
+      File.exists?(path) && FileUtils.rm(path)#, options[:verbose] => false)
 
       dir = path
       while (dir = File.dirname(dir)) && File.exists?(dir) && (Dir.entries(dir) - [".", ".."]).empty?
-        rmdir dir
+        FileUtils.rmdir dir
       end
     end
   end
@@ -81,6 +81,8 @@ module TextAttribute
     hash = Digest::MD5.hexdigest(identifier).scan(/.../)[0...3].join("/")
     if defined?(Rails)
       File.join(Rails.root, "text_cache", Rails.env, hash, identifier)
+    elsif defined?(text_attribute_root)
+      File.join(text_attribute_root, "text_cache", hash, identifier)
     else
       File.join("text_cache", hash, identifier)
     end
@@ -101,7 +103,7 @@ module TextAttribute
             instance_variable_get("@#{text_attribute}_text")
           else
             result = id && read_text_file(text_attribute)
-            if result.present?
+            if result
               instance_variable_set("@#{text_attribute}_text", result)
             else
               instance_variable_set("@#{text_attribute}_text", nil)
@@ -152,11 +154,14 @@ module TextAttribute
 
   def self.included(klass)
     klass.extend ClassMethods
-    if defined?(Rails) && Rails.env.test?
-      klass.send :include, TestMemoryStorage
+    if defined?(Rails)
+      if Rails.env.test?
+        klass.send :include, TestMemoryStorage
+      else
+        klass.send :include, FileSystemStorage
+      end
     else
-      klass.send :include, FileSystemStorage
+      STDERR.puts "You are using TextAttribute without Rails.  You'll need to manually include TextAttribute::FileSystemStorage or TextAttribute::TestMemoryStorage on the line after you include TextAttribute."
     end
-    klass.send :include, CompressedStorage
   end
 end

@@ -1,15 +1,25 @@
 # encoding: UTF-8
 require 'spec_helper'
+require 'fileutils'
 
 describe TextAttribute do
+  after(:each) do
+    FileUtils.rm_rf("/tmp/text_cache")
+  end
+
   class TestModel
     include TextAttribute
+    include TextAttribute::FileSystemStorage
+    
+    def text_attribute_root
+      "/tmp"
+    end
 
     text_attribute :foo
 
     attr_accessor :id
   end
-
+  
   describe "text_cache_path" do
     it "should use the classname and id" do
       model = TestModel.new
@@ -117,7 +127,7 @@ describe TextAttribute do
       model = TestModel.new
       model.id = 5
       model.foo = "hello world!"
-      model.foo_path.should =~ /text_cache\/...\/...\/...\/TextModel_5\/foo/
+      model.foo_path.should =~ /text_cache\/...\/...\/...\/TestModel_5\/foo/
     end
   end
 
@@ -169,33 +179,43 @@ describe TextAttribute do
   describe "in memory storage for testing" do
     before do
       do_not_allow(File).open
+      do_not_allow(FileUtils).rm
+    end
+
+    class InMemoryModel
+      include TextAttribute
+      include TextAttribute::TestMemoryStorage
+
+      text_attribute :foo
+
+      attr_accessor :id
     end
 
     describe "clearing between tests" do
       it "test one" do
-        model1 = TestModel.new
+        model1 = InMemoryModel.new
         model1.id = 5
         model1.foo = "hello"
         model1.store_foo
 
-        model2 = TestModel.new
+        model2 = InMemoryModel.new
         model2.id = 5
         model2.foo.should == "hello"
       end
 
       it "test two" do
-        model2 = TestModel.new
+        model2 = InMemoryModel.new
         model2.id = 5
         model2.foo.should be_nil
       end
     end
 
     describe "compression" do
+      class CompressedTestModel < InMemoryModel
+        include TextAttribute::CompressedStorage
+      end
+      
       context "when turned on" do
-        class CompressedTestModel < TestModel
-        #  include TextAttributes::CompressedStorage
-        end
-
         it "should be gzip compressed" do
           model = CompressedTestModel.new
           model.id = 5
