@@ -1,4 +1,8 @@
-An example:
+# TextAttribute
+
+A simple library for serializing large text blobs to disk instead of storing them in your database.  It's designed to work with Rails.  This is beta software.  Please fix or report bugs!
+
+## An example
 
     class User < ActiveRecord::Base
       include TextAttribute
@@ -16,18 +20,22 @@ An example:
     user.novel_path
     => "your_project/text_cache/development/12a/45b/22a/User_1/novel"
 
+## Compression
+
 If you'd like your attribute files to be compressed, do the following:
 
-class User < ActiveRecord::Base
-  include TextAttribute
-  include TextAttribute::CompressedStorage
+    class User < ActiveRecord::Base
+      include TextAttribute
+      include TextAttribute::CompressedStorage
 
-  text_attribute :novel
-end
+      text_attribute :novel
+    end
 
 Please note that once compressed storage has been enabled, you cannot turn it off without converting or wiping all of the attribute files.  The opposite is also true.  In the future it would be nice to be able to detect and translate between attributes created in compressed and uncompressed modes.
 
-When testing in Rails, TextAttribute will use a temporary memory store.  You should clear this between tests:
+## Rails Testing
+
+When testing in Rails, TextAttribute will use a temporary memory store.  You should clear this between tests or expect strange results.
 
     RSpec.configure do |c|
       config.before(:each) do
